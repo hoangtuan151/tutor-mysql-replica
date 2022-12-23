@@ -1,0 +1,12 @@
+version: '3'
+services:
+
+  mysql-server:
+    image: mysql:5.7
+    volumes:
+      - ./mysql5.7/datadir:/var/lib/mysql
+      - ./mysql5.7/my.cnf:/etc/mysql/my.cnf
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "13306:3306"
