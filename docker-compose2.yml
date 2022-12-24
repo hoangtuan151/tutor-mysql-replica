@@ -1,0 +1,13 @@
+version: '3'
+services:
+
+  # for sharding mod-shard inst01
+  inst03a:
+    image: mysql:5.7
+    volumes:
+      - ./data/inst03a/datadir:/var/lib/mysql
+      - ./data/inst03a/db.conf:/etc/mysql/my.cnf
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "33063:3306"

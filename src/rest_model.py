@@ -12,3 +12,4 @@ class RegisterAccountResponse(BaseModel):
     username: str
     user_id: str
     display_name: str
+    mod_shard: Optional[int]

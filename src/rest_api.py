@@ -36,6 +36,7 @@ async def register_account(payload: RegisterAccountRequest):
             username=user["username"],
             user_id=user["user_id"],
             display_name=user["display_name"],
+            mod_shard=user["mod_shard"],
         )
         return resp
 

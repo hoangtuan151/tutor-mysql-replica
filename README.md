@@ -25,9 +25,15 @@ CREATE TABLE pins (
 ) ENGINE=InnoDB;
 
 
-CHANGE MASTER TO MASTER_HOST = 'db01', MASTER_USER = 'replicator', MASTER_PASSWORD = 'password', MASTER_LOG_FILE = 'mysql-bin.000003', MASTER_LOG_POS = 607;
+create user 'replicator'@'%' identified by 'password';
+grant replication slave on *.* to 'replicator'@'%';
 
-CHANGE MASTER TO MASTER_HOST = 'db02', MASTER_USER = 'replicator', MASTER_PASSWORD = 'password', MASTER_LOG_FILE = 'mysql-bin.000003', MASTER_LOG_POS = 1255;
+
+stop slave;
+
+CHANGE MASTER TO MASTER_HOST = 'inst02a', MASTER_USER = 'replicator', MASTER_PASSWORD = 'password', MASTER_LOG_FILE = 'mysql-bin.000001', MASTER_LOG_POS = 1;
+
+start slave;
 ```
 
 

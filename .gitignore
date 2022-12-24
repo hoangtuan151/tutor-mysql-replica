@@ -1,2 +1,2 @@
 data/inst*/datadir
-*.pyc
+__pycache__
