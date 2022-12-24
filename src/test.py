@@ -3,8 +3,10 @@ import json
 import logging as logger
 
 from kazoo.client import KazooClient
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy_utils import create_database, database_exists
 
 logger.basicConfig(level=logger.DEBUG)
 
@@ -52,9 +54,50 @@ async def test_db():
             print("result:", row)
 
 
+def init_data_shard(kc: KazooClient):
+    shards = [
+        {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
+        {"range": [5, 8], "master": "127.0.0.1:33062", "slave": "inst02b"},
+    ]
+    path = "/pinter/datashard"
+    if not kc.exists(path):
+        kc.create(path, json.dumps(shards).encode("utf-8"), makepath=True)
+    else:
+        kc.set(path, json.dumps(shards).encode("utf-8"))
+
+    for item in shards:
+        _range = item["range"]
+        for idx in range(_range[0], _range[1] + 1):
+            engine = create_engine(f"mysql://root@{item['master']}/shard{idx}")
+            if not database_exists(engine.url):
+                create_database(engine.url)
+            with engine.begin() as conn:
+                sql1 = """
+                    CREATE TABLE IF NOT EXISTS user_has_pins (
+                        user_id INT,
+                        pin_id INT,
+                        sequence INT,
+                        INDEX(user_id, pin_id, sequence)
+                    ) ENGINE=InnoDB;
+                """
+                sql2 = """
+                    CREATE TABLE IF NOT EXISTS pins (
+                        local_id      INT PRIMARY KEY AUTO_INCREMENT,
+                        data          VARCHAR(255),
+                        ts            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    ) ENGINE=InnoDB;
+                """
+                conn.execute(sql1)
+                conn.execute(sql2)
+
+
 if __name__ == "__main__":
     # data, stat = zk.get("/a")
     # logger.info(f"version: {stat.version}, data: {data.decode('utf-8')}")
-    init_mod_shard_data(zk)
+
+    # init_mod_shard_data(zk)
+
     # asyncio.run(test_db())
+
+    init_data_shard(zk)
     input("Press key...")
