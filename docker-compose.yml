@@ -1,25 +1,25 @@
 version: '3'
 services:
 
-  db01:
+  inst01a:
     image: mysql:5.7
     volumes:
-      - ./db01/datadir:/var/lib/mysql
-      - ./db01/db.conf:/etc/mysql/my.cnf
+      - ./data/inst01a/datadir:/var/lib/mysql
+      - ./data/inst01a/db.conf:/etc/mysql/my.cnf
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     ports:
-      - "13306:3306"
+      - "33061:3306"
 
-  db02:
+  inst02a:
     image: mysql:5.7
     volumes:
-      - ./db02/datadir:/var/lib/mysql
-      - ./db02/db.conf:/etc/mysql/my.cnf
+      - ./data/inst02a/datadir:/var/lib/mysql
+      - ./data/inst02a/db.conf:/etc/mysql/my.cnf
     environment:
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     ports:
-      - "13316:3306"
+      - "33062:3306"
 
   zoo1:
     image: zookeeper

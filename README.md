@@ -5,15 +5,18 @@
 ```
 show databases;
 
-CREATE DATABASE mods;
-CREATE DATABASE shard[mum];
+CREATE DATABASE msdb;
 
-CREATE TABLE users (
+CREATE TABLE msdb.users (
   username    VARCHAR(64) PRIMARY KEY,
   user_id     VARCHAR(64),
+  display_name  VARCHAR(255),
   mod_shard   INT
 ) ENGINE=InnoDB;
 
+
+
+CREATE DATABASE shard[mum];
 
 CREATE TABLE pins (
   local_id      INT PRIMARY KEY AUTO_INCREMENT,
