@@ -31,7 +31,7 @@ async def register_account(payload: RegisterAccountRequest):
     else:
         # insert user
         _display_name = payload.display_name or _username.upper()
-        user = await dao.insert_user(_username, _display_name)
+        user = await dao.register_user(_username, _display_name)
         resp = RegisterAccountResponse(
             username=user["username"],
             user_id=user["user_id"],

@@ -35,3 +35,13 @@ async def init_msdb():
         await e.dispose()
 
     logger.info("done!")
+
+
+shard_meta = MetaData()
+Users = Table(
+    "users",
+    shard_meta,
+    Column("local_id", Integer(), primary_key=True),
+    Column("data", String(255)),
+    Column("ts", Integer()),
+)

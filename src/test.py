@@ -72,6 +72,13 @@ def init_data_shard(kc: KazooClient):
             if not database_exists(engine.url):
                 create_database(engine.url)
             with engine.begin() as conn:
+                sql0 = """
+                    CREATE TABLE IF NOT EXISTS users (
+                        local_id      INT PRIMARY KEY AUTO_INCREMENT,
+                        data          VARCHAR(255),
+                        ts            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    ) ENGINE=InnoDB;
+                """
                 sql1 = """
                     CREATE TABLE IF NOT EXISTS user_has_pins (
                         user_id INT,
@@ -87,6 +94,7 @@ def init_data_shard(kc: KazooClient):
                         ts            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     ) ENGINE=InnoDB;
                 """
+                conn.execute(sql0)
                 conn.execute(sql1)
                 conn.execute(sql2)
 
