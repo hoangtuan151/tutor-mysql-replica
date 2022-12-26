@@ -1,6 +1,8 @@
 import logging as logger
 
-logger.basicConfig(level=logger.INFO, format="%(funcName)s()[%(lineno)d] - %(message)s")
+logger.basicConfig(
+    level=logger.INFO, format=">>>>>>>>> %(funcName)s()[%(lineno)d] - %(message)s"
+)
 
 
 class Const:

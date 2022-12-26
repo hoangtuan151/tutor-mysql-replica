@@ -8,7 +8,7 @@ class RegisterAccountRequest(BaseModel):
     display_name: Optional[str]
 
 
-class RegisterAccountResponse(BaseModel):
+class UserProfileResponse(BaseModel):
     username: str
     user_id: str
     display_name: str

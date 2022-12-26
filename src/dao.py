@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 import json
 import time
@@ -10,7 +11,7 @@ from sqlalchemy import insert, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from db_model import ModUserData, ShardUsers
-from rest_model import RegisterAccountResponse
+from rest_model import UserProfileResponse
 from utils import Const, logger
 
 seed(time.time())
@@ -59,6 +60,27 @@ def _get_host_for_mod_shard(mod_shard: int):
     return db_host
 
 
+def _get_host_for_data_shard(data_shard: int):
+    db_host = None
+    for r in DATA_SHARD:
+        if r["range"][0] <= data_shard and data_shard <= r["range"][1]:
+            db_host = r["master"]
+            break
+    return db_host
+
+
+def _encode_cluster_id(shard_id: int, type_id: int, local_id: int):
+    return (shard_id << 46) | (type_id << 36) | (local_id << 0)
+
+
+def _decode_cluster_id(id: int) -> dict:
+    return {
+        "shard_id": id >> 46,
+        "type_id": (id >> 36) & 0x3FF,
+        "local_id": id & 0xFFFFFFFFF,
+    }
+
+
 async def find_user_by_username(username: str):
     # find mod shard (0-based index)
     mod_shard = _get_mod_shard(username.encode("utf-8"))
@@ -83,11 +105,7 @@ async def find_user_by_username(username: str):
     return user
 
 
-def generate_cluster_id(shard_id: int, type_id: int, local_id: int):
-    return (shard_id << 46) | (type_id << 36) | (local_id << 0)
-
-
-async def register_user(username: str, display_name: str) -> RegisterAccountResponse:
+async def register_user(username: str, display_name: str) -> UserProfileResponse:
     #
     # Insert data to data_shard
     #
@@ -99,11 +117,11 @@ async def register_user(username: str, display_name: str) -> RegisterAccountResp
     logger.info(f"got random shard_id: {shard_id}")
 
     # insert user to data shard for local_id
-    engine2: AsyncEngine = create_async_engine(
+    ds_engine: AsyncEngine = create_async_engine(
         f"mysql+asyncmy://root@{DATA_SHARD[i].get('master')}/shard{shard_id}", echo=True
     )
     local_id = None
-    async with engine2.begin() as sess:
+    async with ds_engine.begin() as sess:
         result = await sess.execute(
             ShardUsers.insert().values(
                 data=json.dumps(
@@ -118,7 +136,7 @@ async def register_user(username: str, display_name: str) -> RegisterAccountResp
     logger.info(f"local user id: {local_id}")
 
     # combine cluster id
-    user_cluster_id = generate_cluster_id(shard_id, Const.DATA_TYPE_USERS, local_id)
+    user_cluster_id = _encode_cluster_id(shard_id, Const.DATA_TYPE_USERS, local_id)
 
     #
     # Insert data to mod_shard
@@ -126,22 +144,50 @@ async def register_user(username: str, display_name: str) -> RegisterAccountResp
     mod_shard = _get_mod_shard(username.encode("utf-8"))
     db_host = _get_host_for_mod_shard(mod_shard)
 
-    engine: AsyncEngine = create_async_engine(
+    ms_engine: AsyncEngine = create_async_engine(
         f"mysql+asyncmy://root@{db_host}/{Const.MOD_SHARD_DBNAME}", echo=True
     )
 
-    async with engine.begin() as sess:
+    async with ms_engine.begin() as sess:
         await sess.execute(
             insert(ModUserData).values(
                 username=username, user_id=user_cluster_id, mod_shard=mod_shard
             )
         )
 
-    await engine.dispose()
+    await asyncio.gather(ds_engine.dispose(), ms_engine.dispose())
 
-    return RegisterAccountResponse(
+    return UserProfileResponse(
         username=username,
         user_id=user_cluster_id,
         display_name=display_name,
         mod_shard=mod_shard,
+    )
+
+
+async def find_user_by_cluster_id(cluster_id: int) -> UserProfileResponse:
+    obj = _decode_cluster_id(cluster_id)
+    logger.info(f"cluster id decoded: {obj}")
+
+    _shard_id = obj["shard_id"]
+    _db_host = _get_host_for_data_shard(_shard_id)
+
+    ds_engine: AsyncEngine = create_async_engine(
+        f"mysql+asyncmy://root@{_db_host}/shard{_shard_id}", echo=True
+    )
+
+    row = None
+    async with ds_engine.connect() as sess:
+        result_proxy = await sess.execute(
+            select(ShardUsers).where(ShardUsers.c.local_id == obj["local_id"])
+        )
+        row = result_proxy.first()
+
+    logger.info(f"get user row: {row}")
+    await ds_engine.dispose()
+
+    return (
+        None
+        if row is None
+        else UserProfileResponse(user_id=cluster_id, **json.loads(row.data))
     )

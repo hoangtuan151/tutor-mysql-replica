@@ -21,7 +21,7 @@ async def startup():
     pass
 
 
-@app.post("/register", status_code=201, response_model=RegisterAccountResponse)
+@app.post("/register", status_code=201, response_model=UserProfileResponse)
 async def register_account(payload: RegisterAccountRequest):
     _username = payload.username
     # query the username
@@ -32,6 +32,19 @@ async def register_account(payload: RegisterAccountRequest):
         # insert user
         _display_name = payload.display_name or _username.upper()
         return await dao.register_user(_username, _display_name)
+
+
+@app.get(
+    "/profiles/{cluster_id}",
+    response_model=UserProfileResponse,
+    response_model_exclude_none=True,
+)
+async def get_user_profile(cluster_id: int):
+    user = await dao.find_user_by_cluster_id(cluster_id)
+    if user is None:
+        raise HTTPException(404, detail="User not found")
+    else:
+        return user
 
 
 if __name__ == "__main__":
