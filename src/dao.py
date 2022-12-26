@@ -91,7 +91,7 @@ async def find_user_by_username(username: str):
     logger.info(f"got db_host: {db_host}")
 
     engine: AsyncEngine = create_async_engine(
-        f"mysql+asyncmy://root@{db_host}/{Const.MOD_SHARD_DBNAME}", echo=True
+        f"mysql+asyncmy://root@{db_host}/{Const.MOD_SHARD_DBNAME}", echo=Const.DB_ECHO
     )
 
     sess: AsyncSession
@@ -118,7 +118,8 @@ async def register_user(username: str, display_name: str) -> UserProfileResponse
 
     # insert user to data shard for local_id
     ds_engine: AsyncEngine = create_async_engine(
-        f"mysql+asyncmy://root@{DATA_SHARD[i].get('master')}/shard{shard_id}", echo=True
+        f"mysql+asyncmy://root@{DATA_SHARD[i].get('master')}/shard{shard_id}",
+        echo=Const.DB_ECHO,
     )
     local_id = None
     async with ds_engine.begin() as sess:
@@ -145,7 +146,7 @@ async def register_user(username: str, display_name: str) -> UserProfileResponse
     db_host = _get_host_for_mod_shard(mod_shard)
 
     ms_engine: AsyncEngine = create_async_engine(
-        f"mysql+asyncmy://root@{db_host}/{Const.MOD_SHARD_DBNAME}", echo=True
+        f"mysql+asyncmy://root@{db_host}/{Const.MOD_SHARD_DBNAME}", echo=Const.DB_ECHO
     )
 
     async with ms_engine.begin() as sess:
@@ -173,7 +174,7 @@ async def find_user_by_cluster_id(cluster_id: int) -> UserProfileResponse:
     _db_host = _get_host_for_data_shard(_shard_id)
 
     ds_engine: AsyncEngine = create_async_engine(
-        f"mysql+asyncmy://root@{_db_host}/shard{_shard_id}", echo=True
+        f"mysql+asyncmy://root@{_db_host}/shard{_shard_id}", echo=Const.DB_ECHO
     )
 
     row = None

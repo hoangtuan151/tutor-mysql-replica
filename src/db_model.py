@@ -22,7 +22,7 @@ async def init_msdb():
     engines = []
     for uri in ["127.0.0.1:33061", "127.0.0.1:33062"]:
         msdb_engine: AsyncEngine = create_async_engine(
-            f"mysql+asyncmy://root@{uri}/{Const.MOD_SHARD_DBNAME}", echo=True
+            f"mysql+asyncmy://root@{uri}/{Const.MOD_SHARD_DBNAME}", echo=Const.DB_ECHO
         )
         engines.append(msdb_engine)
         conn: AsyncSession
