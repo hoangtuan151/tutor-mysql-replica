@@ -9,7 +9,8 @@ from kazoo.handlers.gevent import SequentialGeventHandler
 from sqlalchemy import insert, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
-from db_model import TblUsers, Users
+from db_model import ModUserData, ShardUsers
+from rest_model import RegisterAccountResponse
 from utils import Const, logger
 
 seed(time.time())
@@ -74,7 +75,7 @@ async def find_user_by_username(username: str):
     sess: AsyncSession
     user = None
     async with engine.connect() as sess:
-        query = select([TblUsers]).where(TblUsers.c.username == username)
+        query = select([ModUserData]).where(ModUserData.c.username == username)
         user = (await sess.execute(query)).first()
         logger.info(f"row: {user}")
 
@@ -86,7 +87,7 @@ def generate_cluster_id(shard_id: int, type_id: int, local_id: int):
     return (shard_id << 46) | (type_id << 36) | (local_id << 0)
 
 
-async def register_user(username: str, display_name: str):
+async def register_user(username: str, display_name: str) -> RegisterAccountResponse:
     #
     # Insert data to data_shard
     #
@@ -104,7 +105,7 @@ async def register_user(username: str, display_name: str):
     local_id = None
     async with engine2.begin() as sess:
         result = await sess.execute(
-            Users.insert().values(
+            ShardUsers.insert().values(
                 data=json.dumps(
                     {
                         "username": username,
@@ -129,15 +130,18 @@ async def register_user(username: str, display_name: str):
         f"mysql+asyncmy://root@{db_host}/{Const.MOD_SHARD_DBNAME}", echo=True
     )
 
-    user_obj = {
-        "username": username,
-        "user_id": user_cluster_id,
-        "display_name": display_name,
-        "mod_shard": mod_shard,
-    }
     async with engine.begin() as sess:
-        await sess.execute(insert(TblUsers).values(**user_obj))
+        await sess.execute(
+            insert(ModUserData).values(
+                username=username, user_id=user_cluster_id, mod_shard=mod_shard
+            )
+        )
 
     await engine.dispose()
 
-    return user_obj
+    return RegisterAccountResponse(
+        username=username,
+        user_id=user_cluster_id,
+        display_name=display_name,
+        mod_shard=mod_shard,
+    )

@@ -7,12 +7,11 @@ from utils import Const, logger
 
 dbmeta = MetaData()
 
-TblUsers = Table(
-    "users",
+ModUserData = Table(
+    "user_data",
     dbmeta,
     Column("username", String(64), primary_key=True),
     Column("user_id", String(64), index=True),
-    Column("display_name", String(255)),
     Column("mod_shard", Integer(), index=True),
 )
 
@@ -38,7 +37,7 @@ async def init_msdb():
 
 
 shard_meta = MetaData()
-Users = Table(
+ShardUsers = Table(
     "users",
     shard_meta,
     Column("local_id", Integer(), primary_key=True),

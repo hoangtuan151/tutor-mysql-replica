@@ -31,14 +31,7 @@ async def register_account(payload: RegisterAccountRequest):
     else:
         # insert user
         _display_name = payload.display_name or _username.upper()
-        user = await dao.register_user(_username, _display_name)
-        resp = RegisterAccountResponse(
-            username=user["username"],
-            user_id=user["user_id"],
-            display_name=user["display_name"],
-            mod_shard=user["mod_shard"],
-        )
-        return resp
+        return await dao.register_user(_username, _display_name)
 
 
 if __name__ == "__main__":
