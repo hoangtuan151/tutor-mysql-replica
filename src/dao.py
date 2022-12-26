@@ -299,13 +299,13 @@ async def get_pins_for_user(user_id: int) -> dict:
         tasks = []
         for row in result_proxy:
             logger.info(f"\t - row: {row.pin_id}")
-            response[row.pin_id] = {"ts": row.sequence}
+            response[row.pin_id] = {"ts": row.sequence, "pin_id": row.pin_id}
             tasks.append(get_pin_detail(row.pin_id))
 
         for future_reply in asyncio.as_completed(tasks):
             reply = await future_reply
             logger.info(f"future resp: {reply}")
-            response.get(reply["pin_id"])["detail"] = reply["detail"]
+            response.get(reply["pin_id"]).update(reply["detail"])  # merge dict
 
     await ds_engine.dispose()
-    return response
+    return list(response.values())
