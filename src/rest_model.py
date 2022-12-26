@@ -10,6 +10,16 @@ class RegisterAccountRequest(BaseModel):
 
 class UserProfileResponse(BaseModel):
     username: str
-    user_id: str
+    user_id: int
     display_name: str
     mod_shard: Optional[int]
+
+
+class CreatePinRequest(BaseModel):
+    user_id: int
+    details: str
+    link: str
+
+
+class CreatePinResponse(BaseModel):
+    pin_id: int

@@ -81,9 +81,9 @@ def init_data_shard(kc: KazooClient):
                 """
                 sql1 = """
                     CREATE TABLE IF NOT EXISTS user_has_pins (
-                        user_id INT,
-                        pin_id INT,
-                        sequence INT,
+                        user_id BIGINT,
+                        pin_id BIGINT,
+                        sequence BIGINT,
                         INDEX(user_id, pin_id, sequence)
                     ) ENGINE=InnoDB;
                 """

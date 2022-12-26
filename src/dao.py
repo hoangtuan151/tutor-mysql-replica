@@ -10,7 +10,7 @@ from kazoo.handlers.gevent import SequentialGeventHandler
 from sqlalchemy import insert, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
-from db_model import ModUserData, ShardUsers
+from db_model import ModUserData, ShardPins, ShardUserHasPins, ShardUsers
 from rest_model import UserProfileResponse
 from utils import Const, logger
 
@@ -191,3 +191,30 @@ async def find_user_by_cluster_id(cluster_id: int) -> UserProfileResponse:
         if row is None
         else UserProfileResponse(user_id=cluster_id, **json.loads(row.data))
     )
+
+
+async def insert_pin_for_user(user_id: int, pin_data: str) -> int:
+    # choose the same shard of user for the pin
+    _shard_id = _decode_cluster_id(user_id)["shard_id"]
+    _db_host = _get_host_for_data_shard(_shard_id)
+
+    ds_engine: AsyncEngine = create_async_engine(
+        f"mysql+asyncmy://root@{_db_host}/shard{_shard_id}", echo=Const.DB_ECHO
+    )
+
+    pin_cluster_id = None
+    async with ds_engine.begin() as conn:
+        result = await conn.execute(insert(ShardPins).values(data=pin_data))
+        pin_local_id = result.inserted_primary_key[0]
+        pin_cluster_id = _encode_cluster_id(
+            _shard_id, Const.DATA_TYPE_PINS, pin_local_id
+        )
+
+        await conn.execute(
+            insert(ShardUserHasPins).values(
+                user_id=user_id, pin_id=pin_cluster_id, sequence=time.time()
+            )
+        )
+
+    await ds_engine.dispose()
+    return pin_cluster_id

@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import json
 import uuid
 
 import uvicorn
@@ -45,6 +46,12 @@ async def get_user_profile(cluster_id: int):
         raise HTTPException(404, detail="User not found")
     else:
         return user
+
+
+@app.post("/pins", status_code=201, response_model=CreatePinResponse)
+async def create_pin(payload: CreatePinRequest):
+    pin_id = await dao.insert_pin_for_user(payload.user_id, payload.json())
+    return CreatePinResponse(pin_id=pin_id)
 
 
 if __name__ == "__main__":

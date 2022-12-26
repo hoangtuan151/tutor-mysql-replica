@@ -1,6 +1,6 @@
 import asyncio
 
-from sqlalchemy import Column, Integer, MetaData, String, Table
+from sqlalchemy import BigInteger, Column, Integer, MetaData, String, Table
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from utils import Const, logger
@@ -37,10 +37,27 @@ async def init_msdb():
 
 
 shard_meta = MetaData()
+
 ShardUsers = Table(
     "users",
     shard_meta,
     Column("local_id", Integer(), primary_key=True),
     Column("data", String(255)),
     Column("ts", Integer()),
+)
+
+ShardPins = Table(
+    "pins",
+    shard_meta,
+    Column("local_id", Integer(), primary_key=True),
+    Column("data", String(255)),
+    Column("ts", Integer()),
+)
+
+ShardUserHasPins = Table(
+    "user_has_pins",
+    shard_meta,
+    Column("user_id", BigInteger()),
+    Column("pin_id", BigInteger()),
+    Column("sequence", BigInteger()),
 )
