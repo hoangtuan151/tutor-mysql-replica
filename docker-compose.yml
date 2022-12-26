@@ -1,0 +1,29 @@
+version: '3'
+services:
+
+  inst01a:
+    image: mysql:5.7
+    volumes:
+      - ./data/inst01a/datadir:/var/lib/mysql
+      - ./data/inst01a/db.conf:/etc/mysql/my.cnf
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "33061:3306"
+
+  inst02a:
+    image: mysql:5.7
+    volumes:
+      - ./data/inst02a/datadir:/var/lib/mysql
+      - ./data/inst02a/db.conf:/etc/mysql/my.cnf
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - "33062:3306"
+
+  zoo1:
+    image: zookeeper
+    hostname: zoo1
+    ports:
+      - 12181:2181
+      - 18080:8080
