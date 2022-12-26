@@ -267,4 +267,5 @@ async def get_pins_for_user(user_id: int) -> dict:
             logger.info(f"future resp: {reply}")
             response.get(reply["pin_id"])["detail"] = reply["detail"]
 
+    await ds_engine.dispose()
     return response
