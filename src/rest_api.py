@@ -54,5 +54,10 @@ async def create_pin(payload: CreatePinRequest):
     return CreatePinResponse(pin_id=pin_id)
 
 
+@app.get("/profiles/{user_id}/pins")
+async def get_user_pins(user_id: int):
+    return await dao.get_pins_for_user(user_id)
+
+
 if __name__ == "__main__":
     uvicorn.run(app="rest_api:app", reload=True)

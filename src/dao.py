@@ -7,7 +7,7 @@ from random import randint, randrange, seed
 
 from kazoo.client import KazooClient
 from kazoo.handlers.gevent import SequentialGeventHandler
-from sqlalchemy import insert, select, text
+from sqlalchemy import desc, insert, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from db_model import ModUserData, ShardPins, ShardUserHasPins, ShardUsers
@@ -218,3 +218,52 @@ async def insert_pin_for_user(user_id: int, pin_data: str) -> int:
 
     await ds_engine.dispose()
     return pin_cluster_id
+
+
+async def get_pin_detail(pin_id: int) -> str:
+    obj = _decode_cluster_id(pin_id)
+    _shard_id = obj["shard_id"]
+    _db_host = _get_host_for_data_shard(_shard_id)
+
+    ds_engine: AsyncEngine = create_async_engine(
+        f"mysql+asyncmy://root@{_db_host}/shard{_shard_id}", echo=Const.DB_ECHO
+    )
+
+    row = None
+    async with ds_engine.connect() as conn:
+        proxy = await conn.execute(
+            select(ShardPins).where(ShardPins.c.local_id == obj["local_id"])
+        )
+        row = proxy.first()
+
+    await ds_engine.dispose()
+    return {"pin_id": pin_id, "detail": json.loads(row.data)}
+
+
+async def get_pins_for_user(user_id: int) -> dict:
+    _shard_id = _decode_cluster_id(user_id)["shard_id"]
+    _db_host = _get_host_for_data_shard(_shard_id)
+
+    ds_engine: AsyncEngine = create_async_engine(
+        f"mysql+asyncmy://root@{_db_host}/shard{_shard_id}", echo=Const.DB_ECHO
+    )
+
+    response = {}
+    async with ds_engine.connect() as conn:
+        result_proxy = await conn.execute(
+            select(ShardUserHasPins)
+            .where(ShardUserHasPins.c.user_id == user_id)
+            .order_by(desc(ShardUserHasPins.c.sequence))
+        )
+        tasks = []
+        for row in result_proxy:
+            logger.info(f"\t - row: {row.pin_id}")
+            response[row.pin_id] = {"ts": row.sequence}
+            tasks.append(get_pin_detail(row.pin_id))
+
+        for future_reply in asyncio.as_completed(tasks):
+            reply = await future_reply
+            logger.info(f"future resp: {reply}")
+            response.get(reply["pin_id"])["detail"] = reply["detail"]
+
+    return response
