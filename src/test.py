@@ -24,15 +24,17 @@ def watch_node(data, stat):
 def init_mod_shard_data(kc: KazooClient):
     # 1-based index
 
-    # shard = [
-    #     {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
-    #     {"range": [5, 8], "master": "127.0.0.1:33062", "slave": "inst02b"},
-    # ]
-    shard = [
+    shard_v1 = [
+        {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
+        {"range": [5, 8], "master": "127.0.0.1:33062", "slave": "inst02b"},
+    ]
+    shard_v2 = [
         {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
         {"range": [5, 6], "master": "127.0.0.1:33062", "slave": "inst02b"},
         {"range": [7, 8], "master": "127.0.0.1:33063", "slave": "inst03b"},
     ]
+
+    shard = shard_v1
     path = "/pinter/modshard"
     if not kc.exists(path):
         kc.create(path, json.dumps(shard).encode("utf-8"), makepath=True)
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     # data, stat = zk.get("/a")
     # logger.info(f"version: {stat.version}, data: {data.decode('utf-8')}")
 
-    # init_mod_shard_data(zk)
+    init_mod_shard_data(zk)
 
     # asyncio.run(test_db())
 

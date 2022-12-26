@@ -45,6 +45,15 @@ CREATE TABLE pins (
   ts            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
+drop database msdb;
+drop database shard1;
+drop database shard2;
+drop database shard3;
+drop database shard4;
+drop database shard5;
+drop database shard6;
+drop database shard7;
+drop database shard8;
 ```
 
 

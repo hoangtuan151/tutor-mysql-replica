@@ -50,7 +50,9 @@ async def get_user_profile(cluster_id: int):
 
 @app.post("/pins", status_code=201, response_model=CreatePinResponse)
 async def create_pin(payload: CreatePinRequest):
-    pin_id = await dao.insert_pin_for_user(payload.user_id, payload.json())
+    # pin_id = await dao.insert_pin_for_user(payload.user_id, payload.json())
+    pin_id = await dao.insert_pin_randomly_for_user(payload.user_id, payload.json())
+
     return CreatePinResponse(pin_id=pin_id)
 
 

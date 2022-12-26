@@ -221,6 +221,46 @@ async def insert_pin_for_user(user_id: int, pin_data: str) -> int:
     return pin_cluster_id
 
 
+async def insert_pin_randomly_for_user(user_id: int, pin_data: str) -> int:
+    # Get random shard id for pin
+    i = randrange(len(DATA_SHARD))
+    shard_range = DATA_SHARD[i].get("range")
+    pin_shard_id = randint(*shard_range)
+    logger.info(f"got random pin_shard_id: {pin_shard_id}")
+
+    # insert pin
+    engine1: AsyncEngine = create_async_engine(
+        f"mysql+asyncmy://root@{DATA_SHARD[i].get('master')}/shard{pin_shard_id}",
+        echo=Const.DB_ECHO,
+    )
+
+    pin_cluster_id = None
+    async with engine1.begin() as conn:
+        result = await conn.execute(insert(ShardPins).values(data=pin_data))
+        pin_local_id = result.inserted_primary_key[0]
+        pin_cluster_id = _encode_cluster_id(
+            pin_shard_id, Const.DATA_TYPE_PINS, pin_local_id
+        )
+
+    # append pin to user's pins list
+    user_shard_id = _decode_cluster_id(user_id)["shard_id"]
+    _db_host = _get_host_for_data_shard(user_shard_id)
+
+    engine2: AsyncEngine = create_async_engine(
+        f"mysql+asyncmy://root@{_db_host}/shard{user_shard_id}", echo=Const.DB_ECHO
+    )
+
+    async with engine2.begin() as conn:
+        await conn.execute(
+            insert(ShardUserHasPins).values(
+                user_id=user_id, pin_id=pin_cluster_id, sequence=time.time()
+            )
+        )
+
+    await asyncio.gather(engine1.dispose(), engine2.dispose())
+    return pin_cluster_id
+
+
 async def get_pin_detail(pin_id: int) -> str:
     obj = _decode_cluster_id(pin_id)
     _shard_id = obj["shard_id"]
