@@ -12,7 +12,7 @@ class UserProfileResponse(BaseModel):
     username: str
     user_id: int
     display_name: str
-    mod_shard: Optional[int]
+    debug: Optional[dict]
 
 
 class CreatePinRequest(BaseModel):
@@ -23,3 +23,7 @@ class CreatePinRequest(BaseModel):
 
 class CreatePinResponse(BaseModel):
     pin_id: int
+
+
+class UpdatePinRequest(BaseModel):
+    details: str

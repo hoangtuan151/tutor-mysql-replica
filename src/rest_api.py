@@ -4,7 +4,7 @@ import json
 import uuid
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 
 import dao
 from dao import init_zk
@@ -59,6 +59,13 @@ async def create_pin(payload: CreatePinRequest):
 @app.get("/profiles/{user_id}/pins")
 async def get_user_pins(user_id: int):
     return await dao.get_pins_for_user(user_id)
+
+
+@app.put("/pins/{pin_id}")
+async def update_pin(pin_id: int, payload: UpdatePinRequest):
+    logger.info(f"update pin {pin_id} with payload: {payload}")
+    await dao.update_pin(pin_id, payload)
+    return Response(status_code=200)
 
 
 if __name__ == "__main__":

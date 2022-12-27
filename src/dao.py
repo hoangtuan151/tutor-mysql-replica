@@ -11,7 +11,7 @@ from sqlalchemy import desc, insert, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from db_model import ModUserData, ShardPins, ShardUserHasPins, ShardUsers
-from rest_model import UserProfileResponse
+from rest_model import UpdatePinRequest, UserProfileResponse
 from utils import Const, logger
 
 seed(time.time())
@@ -94,11 +94,11 @@ async def find_user_by_username(username: str):
         f"mysql+asyncmy://root@{db_host}/{Const.MOD_SHARD_DBNAME}", echo=Const.DB_ECHO
     )
 
-    sess: AsyncSession
+    conn: AsyncSession
     user = None
-    async with engine.connect() as sess:
+    async with engine.connect() as conn:
         query = select([ModUserData]).where(ModUserData.c.username == username)
-        user = (await sess.execute(query)).first()
+        user = (await conn.execute(query)).first()
         logger.info(f"row: {user}")
 
     await engine.dispose()
@@ -122,8 +122,8 @@ async def register_user(username: str, display_name: str) -> UserProfileResponse
         echo=Const.DB_ECHO,
     )
     local_id = None
-    async with ds_engine.begin() as sess:
-        result = await sess.execute(
+    async with ds_engine.begin() as conn:
+        result = await conn.execute(
             ShardUsers.insert().values(
                 data=json.dumps(
                     {
@@ -149,8 +149,8 @@ async def register_user(username: str, display_name: str) -> UserProfileResponse
         f"mysql+asyncmy://root@{db_host}/{Const.MOD_SHARD_DBNAME}", echo=Const.DB_ECHO
     )
 
-    async with ms_engine.begin() as sess:
-        await sess.execute(
+    async with ms_engine.begin() as conn:
+        await conn.execute(
             insert(ModUserData).values(
                 username=username, user_id=user_cluster_id, mod_shard=mod_shard
             )
@@ -162,7 +162,7 @@ async def register_user(username: str, display_name: str) -> UserProfileResponse
         username=username,
         user_id=user_cluster_id,
         display_name=display_name,
-        mod_shard=mod_shard,
+        debug={"mod_shard": mod_shard},
     )
 
 
@@ -178,8 +178,8 @@ async def find_user_by_cluster_id(cluster_id: int) -> UserProfileResponse:
     )
 
     row = None
-    async with ds_engine.connect() as sess:
-        result_proxy = await sess.execute(
+    async with ds_engine.connect() as conn:
+        result_proxy = await conn.execute(
             select(ShardUsers).where(ShardUsers.c.local_id == obj["local_id"])
         )
         row = result_proxy.first()
@@ -261,7 +261,7 @@ async def insert_pin_randomly_for_user(user_id: int, pin_data: str) -> int:
     return pin_cluster_id
 
 
-async def get_pin_detail(pin_id: int) -> str:
+async def get_pin_data(pin_id: int) -> str:
     obj = _decode_cluster_id(pin_id)
     _shard_id = obj["shard_id"]
     _db_host = _get_host_for_data_shard(_shard_id)
@@ -278,7 +278,7 @@ async def get_pin_detail(pin_id: int) -> str:
         row = proxy.first()
 
     await ds_engine.dispose()
-    return {"pin_id": pin_id, "detail": json.loads(row.data)}
+    return {"pin_id": pin_id, "data": json.loads(row.data)}
 
 
 async def get_pins_for_user(user_id: int) -> dict:
@@ -300,12 +300,40 @@ async def get_pins_for_user(user_id: int) -> dict:
         for row in result_proxy:
             logger.info(f"\t - row: {row.pin_id}")
             response[row.pin_id] = {"ts": row.sequence, "pin_id": row.pin_id}
-            tasks.append(get_pin_detail(row.pin_id))
+            tasks.append(get_pin_data(row.pin_id))
 
         for future_reply in asyncio.as_completed(tasks):
             reply = await future_reply
             logger.info(f"future resp: {reply}")
-            response.get(reply["pin_id"]).update(reply["detail"])  # merge dict
+            response.get(reply["pin_id"]).update(reply["data"])  # merge dict
+            response.get(reply["pin_id"]).update(
+                {"debug": {"shard": _decode_cluster_id(reply["pin_id"])["shard_id"]}}
+            )
 
     await ds_engine.dispose()
     return list(response.values())
+
+
+async def update_pin(pin_id: str, payload: UpdatePinRequest):
+    id_obj = _decode_cluster_id(pin_id)
+    _shard_id = id_obj["shard_id"]
+    _pin_local_id = id_obj["local_id"]
+    _db_host = _get_host_for_data_shard(_shard_id)
+
+    ds_engine: AsyncEngine = create_async_engine(
+        f"mysql+asyncmy://root@{_db_host}/shard{_shard_id}", echo=Const.DB_ECHO
+    )
+
+    async with ds_engine.begin() as conn:
+        pin_obj = await get_pin_data(pin_id)
+        pin_data = pin_obj["data"]
+        pin_data["details"] = payload.details  # update data
+        logger.info(f"new data: {pin_data}")
+        rp = await conn.execute(
+            ShardPins.update()
+            .values(data=json.dumps(pin_data))
+            .where(ShardPins.c.local_id == _pin_local_id)
+        )
+        logger.info(f"rowcount: {rp.rowcount}")
+
+    await ds_engine.dispose()

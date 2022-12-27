@@ -61,6 +61,11 @@ def init_data_shard(kc: KazooClient):
         {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
         {"range": [5, 8], "master": "127.0.0.1:33062", "slave": "inst02b"},
     ]
+    shards = [
+        {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
+        {"range": [5, 6], "master": "127.0.0.1:33062", "slave": "inst02b"},
+        {"range": [7, 8], "master": "127.0.0.1:33063", "slave": "inst03b"},
+    ]
     path = "/pinter/datashard"
     if not kc.exists(path):
         kc.create(path, json.dumps(shards).encode("utf-8"), makepath=True)
@@ -105,7 +110,7 @@ if __name__ == "__main__":
     # data, stat = zk.get("/a")
     # logger.info(f"version: {stat.version}, data: {data.decode('utf-8')}")
 
-    init_mod_shard_data(zk)
+    # init_mod_shard_data(zk)
 
     # asyncio.run(test_db())
 
