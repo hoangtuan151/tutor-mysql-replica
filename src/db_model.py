@@ -7,8 +7,8 @@ from utils import Const, logger
 
 dbmeta = MetaData()
 
-ModUserData = Table(
-    "user_data",
+ModUserNameData = Table(
+    "username_data",
     dbmeta,
     Column("username", String(64), primary_key=True),
     Column("user_id", String(64), index=True),

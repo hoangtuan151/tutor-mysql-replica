@@ -10,7 +10,7 @@ from kazoo.handlers.gevent import SequentialGeventHandler
 from sqlalchemy import desc, insert, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
-from db_model import ModUserData, ShardPins, ShardUserHasPins, ShardUsers
+from db_model import ModUserNameData, ShardPins, ShardUserHasPins, ShardUsers
 from rest_model import UpdatePinRequest, UserProfileResponse
 from utils import Const, logger
 
@@ -86,7 +86,7 @@ async def find_user_by_username(username: str):
     mod_shard = _get_mod_shard(username.encode("utf-8"))
     logger.info(f"calculate mod shard for user '{username}' got: {mod_shard}")
 
-    # find host of the shard
+    # find host of the shard (1-based index)
     db_host = _get_host_for_mod_shard(mod_shard)
     logger.info(f"got db_host: {db_host}")
 
@@ -97,7 +97,7 @@ async def find_user_by_username(username: str):
     conn: AsyncSession
     user = None
     async with engine.connect() as conn:
-        query = select([ModUserData]).where(ModUserData.c.username == username)
+        query = select([ModUserNameData]).where(ModUserNameData.c.username == username)
         user = (await conn.execute(query)).first()
         logger.info(f"row: {user}")
 
@@ -151,7 +151,7 @@ async def register_user(username: str, display_name: str) -> UserProfileResponse
 
     async with ms_engine.begin() as conn:
         await conn.execute(
-            insert(ModUserData).values(
+            insert(ModUserNameData).values(
                 username=username, user_id=user_cluster_id, mod_shard=mod_shard
             )
         )

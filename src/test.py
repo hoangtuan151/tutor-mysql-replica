@@ -21,27 +21,6 @@ def watch_node(data, stat):
         logger.info(f"version: {stat.version}, data: {data_obj}")
 
 
-def init_mod_shard_data(kc: KazooClient):
-    # 1-based index
-
-    shard_v1 = [
-        {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
-        {"range": [5, 8], "master": "127.0.0.1:33062", "slave": "inst02b"},
-    ]
-    shard_v2 = [
-        {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
-        {"range": [5, 6], "master": "127.0.0.1:33062", "slave": "inst02b"},
-        {"range": [7, 8], "master": "127.0.0.1:33063", "slave": "inst03b"},
-    ]
-
-    shard = shard_v1
-    path = "/pinter/modshard"
-    if not kc.exists(path):
-        kc.create(path, json.dumps(shard).encode("utf-8"), makepath=True)
-    else:
-        kc.set(path, json.dumps(shard).encode("utf-8"))
-
-
 async def test_db():
     acm_async_engine: AsyncEngine = create_async_engine(
         "mysql+asyncmy://root@127.0.0.1:33061"
@@ -56,16 +35,53 @@ async def test_db():
             print("result:", row)
 
 
-def init_data_shard(kc: KazooClient):
-    shards = [
+def init_mod_shard_data(kc: KazooClient):
+    # 1-based index
+    shard_v1 = [
         {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
         {"range": [5, 8], "master": "127.0.0.1:33062", "slave": "inst02b"},
     ]
-    shards = [
+    shard_v2 = [
         {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
         {"range": [5, 6], "master": "127.0.0.1:33062", "slave": "inst02b"},
         {"range": [7, 8], "master": "127.0.0.1:33063", "slave": "inst03b"},
     ]
+
+    shards = shard_v1
+    path = "/pinter/modshard"
+    if not kc.exists(path):
+        kc.create(path, json.dumps(shards).encode("utf-8"), makepath=True)
+    else:
+        kc.set(path, json.dumps(shards).encode("utf-8"))
+
+    for item in shards:
+        engine = create_engine(f"mysql://root@{item['master']}/msdb")
+        if not database_exists(engine.url):
+            create_database(engine.url)
+        with engine.begin() as conn:
+            sql = """
+                CREATE TABLE IF NOT EXISTS username_data (
+                    username    VARCHAR(64) PRIMARY KEY,
+                    user_id     VARCHAR(64),
+                    display_name  VARCHAR(255),
+                    mod_shard   INT
+                ) ENGINE=InnoDB;
+            """
+            conn.execute(sql)
+
+
+def init_data_shard(kc: KazooClient):
+    shard_v1 = [
+        {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
+        {"range": [5, 8], "master": "127.0.0.1:33062", "slave": "inst02b"},
+    ]
+    shard_v2 = [
+        {"range": [1, 4], "master": "127.0.0.1:33061", "slave": "inst01b"},
+        {"range": [5, 6], "master": "127.0.0.1:33062", "slave": "inst02b"},
+        {"range": [7, 8], "master": "127.0.0.1:33063", "slave": "inst03b"},
+    ]
+
+    shards = shard_v2
     path = "/pinter/datashard"
     if not kc.exists(path):
         kc.create(path, json.dumps(shards).encode("utf-8"), makepath=True)
@@ -80,7 +96,7 @@ def init_data_shard(kc: KazooClient):
                 create_database(engine.url)
             with engine.begin() as conn:
                 sql0 = """
-                    CREATE TABLE IF NOT EXISTS users (
+                    CREATE TABLE IF NOT EXISTS user_data (
                         local_id      INT PRIMARY KEY AUTO_INCREMENT,
                         data          VARCHAR(255),
                         ts            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -110,9 +126,9 @@ if __name__ == "__main__":
     # data, stat = zk.get("/a")
     # logger.info(f"version: {stat.version}, data: {data.decode('utf-8')}")
 
-    # init_mod_shard_data(zk)
-
     # asyncio.run(test_db())
 
+    init_mod_shard_data(zk)
     init_data_shard(zk)
+
     input("Press key...")

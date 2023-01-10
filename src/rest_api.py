@@ -69,4 +69,4 @@ async def update_pin(pin_id: int, payload: UpdatePinRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app="rest_api:app", reload=True)
+    uvicorn.run(app="rest_api:app", reload=False)
