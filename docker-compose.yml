@@ -22,7 +22,7 @@ services:
       - "33062:3306"
 
   zoo1:
-    image: zookeeper
+    image: zookeeper:3.5
     hostname: zoo1
     ports:
       - 12181:2181
