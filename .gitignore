@@ -1,2 +1,3 @@
 data/inst*/datadir
 __pycache__
+.vscode

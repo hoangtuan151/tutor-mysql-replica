@@ -6,7 +6,8 @@ import uuid
 from random import randint, randrange, seed
 
 from kazoo.client import KazooClient
-from kazoo.handlers.gevent import SequentialGeventHandler
+
+# from kazoo.handlers.gevent import SequentialGeventHandler
 from sqlalchemy import desc, insert, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
@@ -28,7 +29,9 @@ def zk_watch_mod_shard(data, stat):
     if stat is not None:
         global MOD_SHARD
         MOD_SHARD = json.loads(data.decode("utf-8"))
-        logger.info(f"version: {stat.version}, mod_shard: {MOD_SHARD}")
+        logger.info(
+            f"version: {stat.version}, mod_shard: {json.dumps(MOD_SHARD, indent=2)}"
+        )
 
 
 @zk.DataWatch("/pinter/datashard")
@@ -36,7 +39,9 @@ def zk_watch_data_shard(data, stat):
     if stat is not None:
         global DATA_SHARD
         DATA_SHARD = json.loads(data.decode("utf-8"))
-        logger.info(f"version: {stat.version}, data_shard: {DATA_SHARD}")
+        logger.info(
+            f"version: {stat.version}, data_shard: {json.dumps(DATA_SHARD, indent=2)}"
+        )
 
 
 async def init_zk():

@@ -14,11 +14,11 @@ zk = KazooClient(hosts="127.0.0.1:12181")
 zk.start()
 
 
-@zk.DataWatch("/pinter/modshard")
-def watch_node(data, stat):
-    if stat is not None:
-        data_obj = json.loads(data.decode("utf-8"))
-        logger.info(f"version: {stat.version}, data: {data_obj}")
+# @zk.DataWatch("/pinter/modshard")
+# def watch_node(data, stat):
+#     if stat is not None:
+#         data_obj = json.loads(data.decode("utf-8"))
+#         logger.info(f"version: {stat.version}, data: {data_obj}")
 
 
 async def test_db():
@@ -63,7 +63,6 @@ def init_mod_shard_data(kc: KazooClient):
                 CREATE TABLE IF NOT EXISTS username_data (
                     username    VARCHAR(64) PRIMARY KEY,
                     user_id     VARCHAR(64),
-                    display_name  VARCHAR(255),
                     mod_shard   INT
                 ) ENGINE=InnoDB;
             """
@@ -96,7 +95,7 @@ def init_data_shard(kc: KazooClient):
                 create_database(engine.url)
             with engine.begin() as conn:
                 sql0 = """
-                    CREATE TABLE IF NOT EXISTS user_data (
+                    CREATE TABLE IF NOT EXISTS users (
                         local_id      INT PRIMARY KEY AUTO_INCREMENT,
                         data          VARCHAR(255),
                         ts            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
