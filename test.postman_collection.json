@@ -1,0 +1,149 @@
+{
+    "_": {
+        "postman_id": "ce904060-926c-4365-ac3d-5a5b08595b54"
+    },
+    "item": [
+        {
+            "id": "4f8a7fc8-10f4-4ce5-9fe1-42b39c6a7f50",
+            "name": "register account",
+            "request": {
+                "url": {
+                    "protocol": "http",
+                    "port": "8000",
+                    "path": [
+                        "register"
+                    ],
+                    "host": [
+                        "localhost"
+                    ],
+                    "query": [],
+                    "variable": []
+                },
+                "method": "POST",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"username\": \"messi\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "response": [],
+            "event": []
+        },
+        {
+            "id": "10505dc6-8efc-4c7a-ae4f-5e1fb5bac228",
+            "name": "get profile",
+            "request": {
+                "url": {
+                    "protocol": "http",
+                    "port": "8000",
+                    "path": [
+                        "profiles",
+                        "492649928720385"
+                    ],
+                    "host": [
+                        "localhost"
+                    ],
+                    "query": [],
+                    "variable": []
+                },
+                "method": "GET"
+            },
+            "response": [],
+            "event": []
+        },
+        {
+            "id": "5548e07d-09eb-4dbb-90f1-82976f48a0ba",
+            "name": "create a pin",
+            "request": {
+                "url": {
+                    "protocol": "http",
+                    "port": "8000",
+                    "path": [
+                        "pins"
+                    ],
+                    "host": [
+                        "localhost"
+                    ],
+                    "query": [],
+                    "variable": []
+                },
+                "method": "POST",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": 563018672898049,\n    \"details\": \"5st\",\n    \"link\": \"http://abc.com\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "response": [],
+            "event": []
+        },
+        {
+            "id": "3a23bb2e-635a-4a40-b20c-073ddd1dbcac",
+            "name": "get user pins",
+            "request": {
+                "url": {
+                    "protocol": "http",
+                    "port": "8000",
+                    "path": [
+                        "profiles",
+                        "70437463654403",
+                        "pins"
+                    ],
+                    "host": [
+                        "localhost"
+                    ],
+                    "query": [],
+                    "variable": []
+                },
+                "method": "GET"
+            },
+            "response": [],
+            "event": []
+        },
+        {
+            "id": "2bd7c25a-a67e-42b9-959d-9959e2eedaca",
+            "name": "update pin",
+            "request": {
+                "url": {
+                    "protocol": "http",
+                    "port": "8000",
+                    "path": [
+                        "pins"
+                    ],
+                    "host": [
+                        "localhost"
+                    ],
+                    "query": [],
+                    "variable": []
+                },
+                "method": "PUT",
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"user_id\": 563018672898049,\n    \"details\": \"5st\",\n    \"link\": \"http://abc.com\"\n}",
+                    "options": {
+                        "raw": {
+                            "language": "json"
+                        }
+                    }
+                }
+            },
+            "response": [],
+            "event": []
+        }
+    ],
+    "event": [],
+    "variable": [],
+    "info": {
+        "_postman_id": "ce904060-926c-4365-ac3d-5a5b08595b54",
+        "name": "test",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    }
+}
